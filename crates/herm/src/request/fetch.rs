@@ -45,41 +45,25 @@ impl Fetch {
         if bytes.remaining() < 2 {
             return Err(FetchCreationError::MalformedBytes);
         }
+
         let topic_len = bytes.get_u16() as usize;
 
-        // Check if topic name is present
-        if bytes.len() < topic_len {
+        // Check bytes has the right length
+        if bytes.len() != topic_len + 4 + 8 + 4 {
             return Err(FetchCreationError::MalformedBytes);
         }
+
         let topic = String::from_utf8(bytes.slice(0..topic_len).to_vec())
             .map_err(|_| FetchCreationError::MalformedBytes)?;
 
-        // Advance bytes to the next field
+        // Advance bytes over topic name
         bytes.advance(topic_len);
-
-        // Check if partition is present
-        if bytes.remaining() < 4 {
-            return Err(FetchCreationError::MalformedBytes);
-        }
-        let partition = bytes.get_u32();
-
-        // Check if offset is present
-        if bytes.remaining() < 8 {
-            return Err(FetchCreationError::MalformedBytes);
-        }
-        let offset = bytes.get_u64();
-
-        // Check if size is present
-        if bytes.remaining() < 4 {
-            return Err(FetchCreationError::MalformedBytes);
-        }
-        let size = bytes.get_u32();
 
         Ok(Fetch {
             topic,
-            partition,
-            offset,
-            size,
+            partition: bytes.get_u32(),
+            offset: bytes.get_u64(),
+            size: bytes.get_u32(),
         })
     }
 
